@@ -1,0 +1,55 @@
+import { Link, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Brain, LayoutDashboard, MessageSquare, LogIn } from "lucide-react";
+
+export function Navbar() {
+  const location = useLocation();
+
+  return (
+    <nav className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+      <div className="container flex h-16 items-center justify-between px-4">
+        <Link to="/" className="flex items-center space-x-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+            <Brain className="h-6 w-6 text-primary-foreground" />
+          </div>
+          <span className="text-xl font-bold">IntelliAid</span>
+        </Link>
+
+        <div className="flex items-center space-x-6">
+          <div className="hidden md:flex items-center space-x-1">
+            <Button
+              variant={location.pathname === "/student" ? "secondary" : "ghost"}
+              asChild
+              className="rounded-full"
+            >
+              <Link to="/student">
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Student
+              </Link>
+            </Button>
+            <Button
+              variant={location.pathname === "/dashboard" ? "secondary" : "ghost"}
+              asChild
+              className="rounded-full"
+            >
+              <Link to="/dashboard">
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                Dashboard
+              </Link>
+            </Button>
+          </div>
+
+          <ThemeToggle />
+
+          <Button variant="default" asChild className="rounded-full">
+            <Link to="/login">
+              <LogIn className="mr-2 h-4 w-4" />
+              Login
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </nav>
+  );
+}
