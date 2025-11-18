@@ -14,7 +14,212 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      communication_messages: {
+        Row: {
+          audio_url: string | null
+          created_at: string | null
+          id: string
+          language_code: string | null
+          message_type: string
+          original_text: string | null
+          session_id: string
+          simplified_text: string | null
+          student_id: string
+          translated_text: string | null
+          visual_card_data: Json | null
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string | null
+          id?: string
+          language_code?: string | null
+          message_type: string
+          original_text?: string | null
+          session_id: string
+          simplified_text?: string | null
+          student_id: string
+          translated_text?: string | null
+          visual_card_data?: Json | null
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string | null
+          id?: string
+          language_code?: string | null
+          message_type?: string
+          original_text?: string | null
+          session_id?: string
+          simplified_text?: string | null
+          student_id?: string
+          translated_text?: string | null
+          visual_card_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "communication_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_sessions: {
+        Row: {
+          created_at: string | null
+          ended_at: string | null
+          id: string
+          language_code: string | null
+          session_duration: number | null
+          started_at: string | null
+          student_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          language_code?: string | null
+          session_duration?: number | null
+          started_at?: string | null
+          student_id: string
+        }
+        Update: {
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          language_code?: string | null
+          session_duration?: number | null
+          started_at?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emotion_logs: {
+        Row: {
+          confidence_score: number | null
+          context: string | null
+          detected_at: string | null
+          emotion_type: string
+          id: string
+          session_id: string | null
+          student_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          context?: string | null
+          detected_at?: string | null
+          emotion_type: string
+          id?: string
+          session_id?: string | null
+          student_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          context?: string | null
+          detected_at?: string | null
+          emotion_type?: string
+          id?: string
+          session_id?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emotion_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "communication_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emotion_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          updated_at: string | null
+          user_type: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email: string
+          full_name: string
+          id: string
+          updated_at?: string | null
+          user_type: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          updated_at?: string | null
+          user_type?: string
+        }
+        Relationships: []
+      }
+      teacher_students: {
+        Row: {
+          created_at: string | null
+          id: string
+          student_id: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          student_id: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          student_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_students_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_students_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
