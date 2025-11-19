@@ -1,1 +1,4 @@
 project_id = "lfrsmkjshmbnbdwqjfyx"
+
+[functions.process-communication]
+verify_jwt = false
