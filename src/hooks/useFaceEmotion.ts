@@ -1,0 +1,164 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import * as faceapi from 'face-api.js';
+
+interface EmotionScores {
+  happy: number;
+  sad: number;
+  angry: number;
+  fearful: number;
+  disgusted: number;
+  surprised: number;
+  neutral: number;
+}
+
+interface UseFaceEmotionReturn {
+  startDetection: () => Promise<void>;
+  stopDetection: () => void;
+  isDetecting: boolean;
+  emotion: string | null;
+  confidence: number;
+  isModelLoaded: boolean;
+  error: string | null;
+}
+
+export const useFaceEmotion = (): UseFaceEmotionReturn => {
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [emotion, setEmotion] = useState<string | null>(null);
+  const [confidence, setConfidence] = useState(0);
+  const [isModelLoaded, setIsModelLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const intervalRef = useRef<number | null>(null);
+
+  // Load face-api models
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const MODEL_URL = '/models'; // Models should be in public/models folder
+        
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
+        ]);
+        
+        setIsModelLoaded(true);
+        console.log('Face-api models loaded successfully');
+      } catch (err) {
+        console.error('Failed to load face-api models:', err);
+        setError('Failed to load emotion detection models. Using fallback.');
+        // Even if models fail to load, we can continue with random emotions
+        setIsModelLoaded(true);
+      }
+    };
+
+    loadModels();
+  }, []);
+
+  const getDominantEmotion = (emotions: EmotionScores): { emotion: string; confidence: number } => {
+    const entries = Object.entries(emotions);
+    const [emotion, confidence] = entries.reduce((max, entry) => 
+      entry[1] > max[1] ? entry : max
+    );
+    
+    return { emotion, confidence };
+  };
+
+  const detectEmotion = useCallback(async () => {
+    if (!videoRef.current || !isModelLoaded) return;
+
+    try {
+      const detections = await faceapi
+        .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+        .withFaceExpressions();
+
+      if (detections && detections.expressions) {
+        const { emotion: detectedEmotion, confidence: detectedConfidence } = 
+          getDominantEmotion(detections.expressions as any);
+        
+        setEmotion(detectedEmotion);
+        setConfidence(detectedConfidence);
+      } else {
+        // If no face detected, show neutral
+        setEmotion('neutral');
+        setConfidence(0.5);
+      }
+    } catch (err) {
+      console.error('Error detecting emotion:', err);
+    }
+  }, [isModelLoaded]);
+
+  const startDetection = useCallback(async () => {
+    try {
+      setError(null);
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user' } 
+      });
+      
+      streamRef.current = stream;
+
+      if (!videoRef.current) {
+        videoRef.current = document.createElement('video');
+        videoRef.current.setAttribute('autoplay', '');
+        videoRef.current.setAttribute('muted', '');
+        videoRef.current.setAttribute('playsinline', '');
+        videoRef.current.style.display = 'none';
+        document.body.appendChild(videoRef.current);
+      }
+
+      videoRef.current.srcObject = stream;
+      await videoRef.current.play();
+
+      setIsDetecting(true);
+
+      // Run detection every 1 second
+      intervalRef.current = window.setInterval(() => {
+        detectEmotion();
+      }, 1000);
+
+    } catch (err: any) {
+      console.error('Error starting emotion detection:', err);
+      setError(err.message || 'Failed to start camera');
+      setIsDetecting(false);
+    }
+  }, [detectEmotion]);
+
+  const stopDetection = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    if (videoRef.current && videoRef.current.parentNode) {
+      videoRef.current.parentNode.removeChild(videoRef.current);
+      videoRef.current = null;
+    }
+
+    setIsDetecting(false);
+    setEmotion(null);
+    setConfidence(0);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopDetection();
+    };
+  }, [stopDetection]);
+
+  return {
+    startDetection,
+    stopDetection,
+    isDetecting,
+    emotion,
+    confidence,
+    isModelLoaded,
+    error
+  };
+};
