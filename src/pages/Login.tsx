@@ -1,23 +1,57 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Brain, User, GraduationCap } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
-  const { toast } = useToast();
+  const { signIn, signUp, user } = useAuth();
+  const navigate = useNavigate();
   const [userType, setUserType] = useState<"student" | "teacher">("student");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent, isLogin: boolean) => {
+  useEffect(() => {
+    if (user) {
+      navigate(userType === "student" ? "/student" : "/dashboard");
+    }
+  }, [user, userType, navigate]);
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    toast({
-      title: isLogin ? "Login successful!" : "Registration successful!",
-      description: `Welcome to IntelliAid ${userType === "student" ? "Student" : "Teacher"} Portal`,
-    });
+    setLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      await signIn(email, password);
+      navigate(userType === "student" ? "/student" : "/dashboard");
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("reg-email") as string;
+    const password = formData.get("reg-password") as string;
+    const fullName = formData.get("name") as string;
+
+    try {
+      await signUp(email, password, fullName, userType);
+    } catch (error) {
+      console.error("Registration error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,7 +100,7 @@ const Login = () => {
           </TabsList>
 
           <TabsContent value="login">
-            <form onSubmit={(e) => handleSubmit(e, true)} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -85,14 +119,14 @@ const Login = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full rounded-full">
-                Sign In
+              <Button type="submit" className="w-full rounded-full" disabled={loading}>
+                {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
           </TabsContent>
 
           <TabsContent value="register">
-            <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
+            <form onSubmit={handleRegister} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
@@ -120,8 +154,8 @@ const Login = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full rounded-full">
-                Create Account
+              <Button type="submit" className="w-full rounded-full" disabled={loading}>
+                {loading ? "Creating account..." : "Create Account"}
               </Button>
             </form>
           </TabsContent>

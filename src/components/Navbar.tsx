@@ -1,10 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Brain, LayoutDashboard, MessageSquare, LogIn } from "lucide-react";
+import { Brain, LayoutDashboard, MessageSquare, LogIn, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Navbar() {
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
@@ -17,37 +19,50 @@ export function Navbar() {
         </Link>
 
         <div className="flex items-center space-x-6">
-          <div className="hidden md:flex items-center space-x-1">
-            <Button
-              variant={location.pathname === "/student" ? "secondary" : "ghost"}
-              asChild
-              className="rounded-full"
-            >
-              <Link to="/student">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Student
-              </Link>
-            </Button>
-            <Button
-              variant={location.pathname === "/dashboard" ? "secondary" : "ghost"}
-              asChild
-              className="rounded-full"
-            >
-              <Link to="/dashboard">
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                Dashboard
-              </Link>
-            </Button>
-          </div>
+          {user && (
+            <div className="hidden md:flex items-center space-x-1">
+              <Button
+                variant={location.pathname === "/student" ? "secondary" : "ghost"}
+                asChild
+                className="rounded-full"
+              >
+                <Link to="/student">
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Student
+                </Link>
+              </Button>
+              <Button
+                variant={location.pathname === "/dashboard" ? "secondary" : "ghost"}
+                asChild
+                className="rounded-full"
+              >
+                <Link to="/dashboard">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Dashboard
+                </Link>
+              </Button>
+            </div>
+          )}
 
           <ThemeToggle />
 
-          <Button variant="default" asChild className="rounded-full">
-            <Link to="/login">
-              <LogIn className="mr-2 h-4 w-4" />
-              Login
-            </Link>
-          </Button>
+          {!user ? (
+            <Button variant="default" asChild className="rounded-full">
+              <Link to="/login">
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              onClick={() => signOut()}
+              className="rounded-full"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          )}
         </div>
       </div>
     </nav>
