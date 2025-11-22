@@ -105,6 +105,7 @@ const Login = () => {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="name@example.com"
                   required
@@ -114,6 +115,7 @@ const Login = () => {
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
+                  name="password"
                   type="password"
                   placeholder="••••••••"
                   required
@@ -131,6 +133,7 @@ const Login = () => {
                 <Label htmlFor="name">Full Name</Label>
                 <Input
                   id="name"
+                  name="name"
                   type="text"
                   placeholder="John Doe"
                   required
@@ -140,6 +143,7 @@ const Login = () => {
                 <Label htmlFor="reg-email">Email</Label>
                 <Input
                   id="reg-email"
+                  name="reg-email"
                   type="email"
                   placeholder="name@example.com"
                   required
@@ -149,6 +153,7 @@ const Login = () => {
                 <Label htmlFor="reg-password">Password</Label>
                 <Input
                   id="reg-password"
+                  name="reg-password"
                   type="password"
                   placeholder="••••••••"
                   required
