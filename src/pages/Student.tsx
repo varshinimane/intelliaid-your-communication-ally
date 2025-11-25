@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -8,21 +9,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mic, Volume2, Brain, Languages } from "lucide-react";
+import { Mic, Volume2, Brain, Languages, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { useFaceEmotion } from "@/hooks/useFaceEmotion";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Student = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState("en-US");
   const [currentText, setCurrentText] = useState("");
   const [simplifiedText, setSimplifiedText] = useState("");
   const [translatedText, setTranslatedText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
   
   const { 
     isListening, 
@@ -52,53 +57,61 @@ const Student = () => {
     isModelLoaded
   } = useFaceEmotion();
 
+  // Check authentication
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [user, authLoading, navigate]);
+
   // Start a communication session and emotion detection
   useEffect(() => {
+    if (!user) return;
+    
     const startSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      try {
+        const { data, error } = await supabase
+          .from('communication_sessions')
+          .insert({
+            student_id: user.id,
+            language_code: selectedLanguage,
+          })
+          .select()
+          .single();
 
-      const { data, error } = await supabase
-        .from('communication_sessions')
-        .insert({
-          student_id: user.id,
-          language_code: selectedLanguage,
-        })
-        .select()
-        .single();
+        if (error) {
+          console.error('Error creating session:', error);
+        } else {
+          setSessionId(data.id);
+        }
 
-      if (error) {
-        console.error('Error creating session:', error);
-      } else {
-        setSessionId(data.id);
+        // Start emotion detection with error handling
+        await startEmotionDetection().catch((error) => {
+          console.error('Error starting emotion detection:', error);
+          toast({
+            title: "Camera Access",
+            description: "Camera access denied. Emotion detection disabled.",
+          });
+        });
+      } catch (error) {
+        console.error('Initialization error:', error);
+      } finally {
+        setIsInitializing(false);
       }
     };
 
     startSession();
-    
-    // Start emotion detection with error handling
-    startEmotionDetection().catch((error) => {
-      console.error('Error starting emotion detection:', error);
-      toast({
-        title: "Camera Access Required",
-        description: "Please allow camera access for emotion detection to work.",
-        variant: "destructive"
-      });
-    });
 
     return () => {
       stopEmotionDetection();
     };
-  }, []);
+  }, [user]);
 
   // Log emotions to database
   useEffect(() => {
-    if (!emotion || !sessionId) return;
+    if (!emotion || !sessionId || !user) return;
 
     const logEmotion = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       await supabase.from('emotion_logs').insert({
         student_id: user.id,
         session_id: sessionId,
@@ -109,7 +122,7 @@ const Student = () => {
     };
 
     logEmotion();
-  }, [emotion, sessionId]);
+  }, [emotion, sessionId, user, isListening, confidence]);
 
   const handleRecordToggle = () => {
     if (isListening) {
@@ -231,18 +244,15 @@ const Student = () => {
     });
 
     // Save to database
-    if (sessionId) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from('communication_messages').insert({
-          student_id: user.id,
-          session_id: sessionId,
-          message_type: 'visual_card',
-          visual_card_data: { emoji, label },
-          original_text: message,
-          language_code: selectedLanguage
-        });
-      }
+    if (sessionId && user) {
+      await supabase.from('communication_messages').insert({
+        student_id: user.id,
+        session_id: sessionId,
+        message_type: 'visual_card',
+        visual_card_data: { emoji, label },
+        original_text: message,
+        language_code: selectedLanguage
+      });
     }
   };
 
@@ -257,6 +267,18 @@ const Student = () => {
       default: return '😐';
     }
   };
+
+  // Show loading state
+  if (authLoading || isInitializing) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+          <p className="text-muted-foreground">Initializing IntelliAid...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
