@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, BookOpen, Volume2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Eye, EyeOff, BookOpen, Volume2, Send } from "lucide-react";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +16,8 @@ interface InstructionCardProps {
   simplifiedInstruction: string;
   isRead: boolean;
   createdAt: string;
+  studentResponse?: string | null;
+  completedAt?: string | null;
   onMarkAsRead: () => void;
 }
 
@@ -26,9 +29,13 @@ const InstructionCard = ({
   simplifiedInstruction,
   isRead,
   createdAt,
+  studentResponse,
+  completedAt,
   onMarkAsRead,
 }: InstructionCardProps) => {
   const [showOriginal, setShowOriginal] = useState(false);
+  const [response, setResponse] = useState(studentResponse || "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { speak, isSpeaking, stop } = useSpeechSynthesis();
   const { toast } = useToast();
 
@@ -61,6 +68,46 @@ const InstructionCard = ({
     } else {
       const textToSpeak = showOriginal ? originalInstruction : simplifiedInstruction;
       speak(textToSpeak);
+    }
+  };
+
+  const handleSubmitResponse = async () => {
+    if (!response.trim()) {
+      toast({
+        title: "Response required",
+        description: "Please write your response before submitting",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('teacher_instructions')
+        .update({
+          student_response: response,
+          completed_at: new Date().toISOString(),
+          is_read: true,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Response submitted",
+        description: "Your work has been sent to your teacher",
+      });
+      onMarkAsRead();
+    } catch (error) {
+      console.error('Error submitting response:', error);
+      toast({
+        title: "Submission failed",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -119,7 +166,7 @@ const InstructionCard = ({
         <p className="text-foreground leading-relaxed">{displayText}</p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 mb-4">
         <Button
           size="sm"
           variant="outline"
@@ -139,6 +186,37 @@ const InstructionCard = ({
           </Button>
         )}
       </div>
+
+      {/* Student Response Section */}
+      {!completedAt ? (
+        <div className="space-y-2 pt-4 border-t">
+          <label className="text-sm font-medium">Your Response:</label>
+          <Textarea
+            value={response}
+            onChange={(e) => setResponse(e.target.value)}
+            placeholder="Write your answer here..."
+            className="min-h-[120px]"
+          />
+          <Button
+            onClick={handleSubmitResponse}
+            disabled={isSubmitting}
+            className="w-full"
+          >
+            <Send className="h-4 w-4 mr-2" />
+            {isSubmitting ? "Submitting..." : "Submit Response"}
+          </Button>
+        </div>
+      ) : (
+        <div className="pt-4 border-t">
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <p className="text-sm font-medium mb-2">Your Submitted Response:</p>
+            <p className="text-sm whitespace-pre-wrap">{studentResponse}</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Submitted on {new Date(completedAt).toLocaleDateString()}
+            </p>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };
