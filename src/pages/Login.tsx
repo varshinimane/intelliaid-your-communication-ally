@@ -2,19 +2,24 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Brain, User, GraduationCap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
-  const { signIn, signUp, signInWithGoogle, resetPassword, user } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resetPassword, user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [userType, setUserType] = useState<"student" | "teacher">("student");
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
+  const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -80,6 +85,61 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  const handleRoleSelection = async (selectedRole: 'student' | 'teacher') => {
+    if (!pendingUserId) return;
+    
+    setLoading(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userEmail = userData.user?.email || '';
+      const userName = userData.user?.user_metadata?.full_name || userData.user?.email?.split('@')[0] || '';
+
+      const { error } = await supabase
+        .from('profiles')
+        .insert({
+          id: pendingUserId,
+          user_type: selectedRole,
+          email: userEmail,
+          full_name: userName
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Profile created!",
+        description: `Welcome as a ${selectedRole}!`
+      });
+
+      setShowRoleSelection(false);
+      setPendingUserId(null);
+      
+      // Reload to fetch the new profile
+      window.location.href = selectedRole === 'student' ? '/student' : '/dashboard';
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Check if user needs role selection after auth state changes
+  useEffect(() => {
+    const checkProfile = async () => {
+      if (user && !profile && !authLoading) {
+        setPendingUserId(user.id);
+        setShowRoleSelection(true);
+      }
+    };
+    
+    if (!authLoading) {
+      checkProfile();
+    }
+  }, [user, profile, authLoading]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-accent/5 px-4 py-8">
@@ -313,6 +373,41 @@ const Login = () => {
           By continuing, you agree to our Terms of Service and Privacy Policy
         </p>
       </Card>
+
+      {/* Role Selection Dialog */}
+      {showRoleSelection && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Select Your Role</CardTitle>
+              <CardDescription>
+                Are you a student or a teacher?
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button
+                onClick={() => handleRoleSelection('student')}
+                className="w-full"
+                size="lg"
+                disabled={loading}
+              >
+                <GraduationCap className="mr-2 h-5 w-5" />
+                I'm a Student
+              </Button>
+              <Button
+                onClick={() => handleRoleSelection('teacher')}
+                className="w-full"
+                variant="outline"
+                size="lg"
+                disabled={loading}
+              >
+                <User className="mr-2 h-5 w-5" />
+                I'm a Teacher
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
