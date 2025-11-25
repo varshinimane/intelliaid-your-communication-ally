@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import AddStudentDialog from "@/components/AddStudentDialog";
 import SendInstructionDialog from "@/components/SendInstructionDialog";
+import LiveEmotionMonitor from "@/components/LiveEmotionMonitor";
 import {
   LineChart,
   Line,
@@ -227,6 +228,9 @@ const DashboardReal = () => {
           </div>
           {user && <AddStudentDialog teacherId={user.id} onStudentAdded={fetchDashboardData} />}
         </div>
+
+        {/* Live Emotion Monitor */}
+        {user && <LiveEmotionMonitor teacherId={user.id} />}
 
         {/* Stats Overview */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
