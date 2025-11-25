@@ -52,7 +52,7 @@ const Student = () => {
     isModelLoaded
   } = useFaceEmotion();
 
-  // Start a communication session
+  // Start a communication session and emotion detection
   useEffect(() => {
     const startSession = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -75,7 +75,16 @@ const Student = () => {
     };
 
     startSession();
-    startEmotionDetection();
+    
+    // Start emotion detection with error handling
+    startEmotionDetection().catch((error) => {
+      console.error('Error starting emotion detection:', error);
+      toast({
+        title: "Camera Access Required",
+        description: "Please allow camera access for emotion detection to work.",
+        variant: "destructive"
+      });
+    });
 
     return () => {
       stopEmotionDetection();
@@ -250,21 +259,24 @@ const Student = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 p-4 md:p-8">
+    <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header with Emotion Detection */}
-        <Card className="p-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <Card className="p-6 border-2">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Student Interface</h1>
-              <p className="text-muted-foreground mt-1">Express yourself your way</p>
+              <h1 className="text-3xl font-bold text-foreground">IntelliAid Student</h1>
+              <p className="text-muted-foreground mt-1">AI-Powered Multimodal Communication Platform</p>
             </div>
-            <div className="flex items-center gap-3 px-4 py-2 bg-primary/10 rounded-lg">
+            <div className="flex items-center gap-3 px-4 py-2 bg-accent/10 rounded-lg border border-accent/20">
               <div className="text-4xl">{getEmotionEmoji(emotion)}</div>
               <div>
-                <p className="text-sm font-medium text-foreground">Current Mood</p>
+                <p className="text-sm font-medium text-foreground">
+                  {isModelLoaded ? 'Emotion Detected' : 'Loading AI...'}
+                </p>
                 <p className="text-xs text-muted-foreground capitalize">
-                  {emotion || 'detecting...'} {confidence > 0 && `(${Math.round(confidence * 100)}%)`}
+                  {emotion || (isModelLoaded ? 'neutral' : 'initializing...')} 
+                  {confidence > 0 && ` (${Math.round(confidence * 100)}%)`}
                 </p>
               </div>
             </div>
@@ -272,8 +284,11 @@ const Student = () => {
         </Card>
 
         {/* Voice Communication Controls */}
-        <Card className="p-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-          <h2 className="text-xl font-semibold mb-4 text-foreground">Voice Communication</h2>
+        <Card className="p-6 border-2">
+          <h2 className="text-xl font-semibold mb-4 text-foreground flex items-center gap-2">
+            <Mic className="h-5 w-5 text-primary" />
+            Speech AI + Translation AI
+          </h2>
           
           <div className="space-y-4">
             <div>
@@ -399,8 +414,8 @@ const Student = () => {
         </Card>
 
         {/* Visual Communication Cards */}
-        <Card className="p-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-          <h2 className="text-xl font-semibold mb-4 text-foreground">Visual Communication</h2>
+        <Card className="p-6 border-2">
+          <h2 className="text-xl font-semibold mb-4 text-foreground">Visual Symbol Communication</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {symbolCards.map((card) => (
               <Button

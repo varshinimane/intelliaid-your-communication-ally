@@ -8,29 +8,29 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Light Mode - Calm & Accessible */
-    --background: 248 250 252; /* #F8FAFC */
-    --foreground: 222 47% 11%; /* #0F172A */
+    /* Light Mode - Professional & Calming */
+    --background: 240 10% 98%; /* Soft off-white */
+    --foreground: 240 10% 10%; /* Deep navy text */
 
-    --card: 0 0% 100%; /* #FFFFFF */
-    --card-foreground: 222 47% 11%;
+    --card: 0 0% 100%; /* Pure white */
+    --card-foreground: 240 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 240 10% 10%;
 
-    --primary: 217 91% 60%; /* #3B82F6 - Cool Blue */
+    --primary: 217 91% 60%; /* Bright blue */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 10% 10%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    --accent: 160 84% 39%; /* #10B981 - Soft Green */
+    --accent: 262 83% 58%; /* Purple accent */
     --accent-foreground: 0 0% 100%;
 
-    --success: 160 84% 39%;
+    --success: 142 71% 45%; /* Professional green for success only */
     --success-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -53,30 +53,30 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Dark Mode - Deep & Calming */
-    --background: 222 47% 11%; /* #0F172A */
-    --foreground: 210 40% 98%; /* #E2E8F0 */
+    /* Dark Mode - Professional & Sleek */
+    --background: 240 10% 10%; /* Deep navy */
+    --foreground: 240 5% 96%; /* Soft white text */
 
-    --card: 215 28% 17%; /* #1E293B */
-    --card-foreground: 210 40% 98%;
+    --card: 240 8% 15%; /* Slightly lighter navy */
+    --card-foreground: 240 5% 96%;
 
-    --popover: 215 28% 17%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 8% 15%;
+    --popover-foreground: 240 5% 96%;
 
-    --primary: 213 94% 68%; /* #60A5FA - Lighter Blue */
-    --primary-foreground: 222 47% 11%;
+    --primary: 217 91% 65%; /* Bright blue */
+    --primary-foreground: 240 10% 10%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 5% 20%;
+    --secondary-foreground: 240 5% 96%;
 
-    --muted: 215 28% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 240 5% 20%;
+    --muted-foreground: 240 5% 64%;
 
-    --accent: 156 72% 67%; /* #34D399 - Softer Green */
-    --accent-foreground: 222 47% 11%;
+    --accent: 262 83% 65%; /* Bright purple */
+    --accent-foreground: 240 10% 10%;
 
-    --success: 156 72% 67%;
-    --success-foreground: 222 47% 11%;
+    --success: 142 71% 50%; /* Professional green */
+    --success-foreground: 240 10% 10%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
