@@ -9,13 +9,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mic, Volume2, Brain, Languages, Loader2 } from "lucide-react";
+import { Mic, Volume2, Brain, Languages, Loader2, Inbox } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { useFaceEmotion } from "@/hooks/useFaceEmotion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import InstructionCard from "@/components/InstructionCard";
 
 const Student = () => {
   const { toast } = useToast();
@@ -29,6 +30,8 @@ const Student = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [instructions, setInstructions] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   
   const { 
     isListening, 
@@ -130,6 +133,49 @@ const Student = () => {
       stopEmotionDetection();
     };
   }, [user, startEmotionDetection, stopEmotionDetection, toast]);
+
+  // Fetch teacher instructions
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchInstructions = async () => {
+      const { data, error } = await supabase
+        .from('teacher_instructions')
+        .select('*')
+        .eq('student_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching instructions:', error);
+      } else {
+        setInstructions(data || []);
+        setUnreadCount(data?.filter(i => !i.is_read).length || 0);
+      }
+    };
+
+    fetchInstructions();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('student-instructions')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'teacher_instructions',
+          filter: `student_id=eq.${user.id}`,
+        },
+        () => {
+          fetchInstructions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // Log emotions to database
   useEffect(() => {
@@ -389,6 +435,44 @@ const Student = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
+        {/* Teacher Instructions Section */}
+        {instructions.length > 0 && (
+          <Card className="p-6 border-2">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                <Inbox className="h-5 w-5 text-primary" />
+                Instructions from Teacher
+              </h2>
+              {unreadCount > 0 && (
+                <span className="px-3 py-1 bg-primary text-primary-foreground text-sm font-medium rounded-full">
+                  {unreadCount} New
+                </span>
+              )}
+            </div>
+            <div className="space-y-4">
+              {instructions.map((instruction) => (
+                <InstructionCard
+                  key={instruction.id}
+                  id={instruction.id}
+                  title={instruction.title}
+                  subject={instruction.subject}
+                  originalInstruction={instruction.original_instruction}
+                  simplifiedInstruction={instruction.simplified_instruction}
+                  isRead={instruction.is_read}
+                  createdAt={instruction.created_at}
+                  onMarkAsRead={() => {
+                    setInstructions(prev =>
+                      prev.map(i =>
+                        i.id === instruction.id ? { ...i, is_read: true } : i
+                      )
+                    );
+                    setUnreadCount(prev => Math.max(0, prev - 1));
+                  }}
+                />
+              ))}
+            </div>
+          </Card>
+        )}
         {/* Header with Emotion Detection */}
         <Card className="p-6 border-2">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">

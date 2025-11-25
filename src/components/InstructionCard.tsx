@@ -1,0 +1,146 @@
+import { useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Eye, EyeOff, BookOpen, Volume2 } from "lucide-react";
+import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+interface InstructionCardProps {
+  id: string;
+  title: string;
+  subject?: string;
+  originalInstruction: string;
+  simplifiedInstruction: string;
+  isRead: boolean;
+  createdAt: string;
+  onMarkAsRead: () => void;
+}
+
+const InstructionCard = ({
+  id,
+  title,
+  subject,
+  originalInstruction,
+  simplifiedInstruction,
+  isRead,
+  createdAt,
+  onMarkAsRead,
+}: InstructionCardProps) => {
+  const [showOriginal, setShowOriginal] = useState(false);
+  const { speak, isSpeaking, stop } = useSpeechSynthesis();
+  const { toast } = useToast();
+
+  const handleToggleView = () => {
+    setShowOriginal(!showOriginal);
+  };
+
+  const handleMarkAsRead = async () => {
+    if (isRead) return;
+
+    const { error } = await supabase
+      .from('teacher_instructions')
+      .update({ is_read: true })
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to mark as read",
+        variant: "destructive",
+      });
+    } else {
+      onMarkAsRead();
+    }
+  };
+
+  const handleSpeak = () => {
+    if (isSpeaking) {
+      stop();
+    } else {
+      const textToSpeak = showOriginal ? originalInstruction : simplifiedInstruction;
+      speak(textToSpeak);
+    }
+  };
+
+  const displayText = showOriginal ? originalInstruction : simplifiedInstruction;
+  const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return (
+    <Card className="p-6 border-2 hover:border-primary/50 transition-colors">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+            {!isRead && (
+              <Badge variant="default" className="bg-primary">New</Badge>
+            )}
+          </div>
+          {subject && (
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              {subject}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground mt-1">{formattedDate}</p>
+        </div>
+      </div>
+
+      <div className="bg-muted/30 rounded-lg p-4 mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-medium text-foreground">
+            {showOriginal ? "📝 Original Instruction" : "✨ Simplified Version"}
+          </p>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleToggleView}
+            className="h-8"
+          >
+            {showOriginal ? (
+              <>
+                <EyeOff className="h-4 w-4 mr-2" />
+                Show Simplified
+              </>
+            ) : (
+              <>
+                <Eye className="h-4 w-4 mr-2" />
+                Show Original
+              </>
+            )}
+          </Button>
+        </div>
+        <p className="text-foreground leading-relaxed">{displayText}</p>
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleSpeak}
+          className="flex-1"
+        >
+          <Volume2 className="h-4 w-4 mr-2" />
+          {isSpeaking ? 'Stop' : 'Listen'}
+        </Button>
+        {!isRead && (
+          <Button
+            size="sm"
+            onClick={handleMarkAsRead}
+            className="flex-1"
+          >
+            Mark as Read
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
+};
+
+export default InstructionCard;

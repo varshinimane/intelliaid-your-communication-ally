@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import AddStudentDialog from "@/components/AddStudentDialog";
+import SendInstructionDialog from "@/components/SendInstructionDialog";
 import {
   LineChart,
   Line,
@@ -386,6 +387,10 @@ const DashboardReal = () => {
                       {emotionIcons[student.emotion as keyof typeof emotionIcons]}
                       <span className="capitalize">{student.emotion}</span>
                     </Badge>
+                    <SendInstructionDialog 
+                      studentId={student.id} 
+                      studentName={student.full_name}
+                    />
                   </div>
                 </div>
               ))}

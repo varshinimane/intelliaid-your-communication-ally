@@ -184,6 +184,60 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_instructions: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          original_instruction: string
+          simplified_instruction: string | null
+          student_id: string
+          subject: string | null
+          teacher_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          original_instruction: string
+          simplified_instruction?: string | null
+          student_id: string
+          subject?: string | null
+          teacher_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          original_instruction?: string
+          simplified_instruction?: string | null
+          student_id?: string
+          subject?: string | null
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_instructions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_instructions_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_students: {
         Row: {
           created_at: string | null
