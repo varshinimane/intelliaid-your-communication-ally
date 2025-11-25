@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Smile, Meh, Frown, TrendingUp, Users, Brain } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -54,6 +56,32 @@ const DashboardReal = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedStudentResponses, setSelectedStudentResponses] = useState<any[]>([]);
+  const [showResponsesDialog, setShowResponsesDialog] = useState(false);
+
+  const viewStudentResponses = async (studentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('teacher_instructions')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('teacher_id', user?.id)
+        .not('student_response', 'is', null)
+        .order('completed_at', { ascending: false });
+
+      if (error) throw error;
+
+      setSelectedStudentResponses(data || []);
+      setShowResponsesDialog(true);
+    } catch (error) {
+      console.error('Error fetching student responses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load student responses",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     if (!authLoading) {
@@ -391,10 +419,19 @@ const DashboardReal = () => {
                       {emotionIcons[student.emotion as keyof typeof emotionIcons]}
                       <span className="capitalize">{student.emotion}</span>
                     </Badge>
-                    <SendInstructionDialog 
-                      studentId={student.id} 
-                      studentName={student.full_name}
-                    />
+                    <div className="flex gap-2">
+                      <SendInstructionDialog 
+                        studentId={student.id} 
+                        studentName={student.full_name}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => viewStudentResponses(student.id)}
+                      >
+                        View Responses
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -402,6 +439,44 @@ const DashboardReal = () => {
           )}
         </Card>
       </div>
+
+      {/* Student Responses Dialog */}
+      <Dialog open={showResponsesDialog} onOpenChange={setShowResponsesDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Student Responses</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedStudentResponses.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No responses yet</p>
+            ) : (
+              selectedStudentResponses.map((instruction) => (
+                <Card key={instruction.id}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{instruction.title}</CardTitle>
+                    {instruction.subject && (
+                      <Badge variant="secondary" className="w-fit">{instruction.subject}</Badge>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Instruction:</p>
+                      <p className="text-sm">{instruction.simplified_instruction || instruction.original_instruction}</p>
+                    </div>
+                    <div className="bg-muted p-3 rounded-lg">
+                      <p className="text-sm font-medium mb-2">Student's Response:</p>
+                      <p className="text-sm whitespace-pre-wrap">{instruction.student_response}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Submitted: {new Date(instruction.completed_at).toLocaleString()}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

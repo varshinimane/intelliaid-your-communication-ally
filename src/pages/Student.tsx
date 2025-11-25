@@ -460,6 +460,8 @@ const Student = () => {
                   simplifiedInstruction={instruction.simplified_instruction}
                   isRead={instruction.is_read}
                   createdAt={instruction.created_at}
+                  studentResponse={instruction.student_response}
+                  completedAt={instruction.completed_at}
                   onMarkAsRead={() => {
                     setInstructions(prev =>
                       prev.map(i =>
