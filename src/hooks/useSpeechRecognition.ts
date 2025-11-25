@@ -23,6 +23,7 @@ export const useSpeechRecognition = (
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const isListeningRef = useRef(false); // Track actual state to prevent conflicts
 
   const isSupported = typeof window !== 'undefined' && 
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
@@ -78,17 +79,8 @@ export const useSpeechRecognition = (
 
     recognition.onend = () => {
       console.log('Speech recognition ended');
+      isListeningRef.current = false;
       setIsListening(false);
-      
-      // Auto-restart if still supposed to be listening (for continuous mode)
-      if (isListening && recognitionRef.current) {
-        console.log('Auto-restarting speech recognition...');
-        try {
-          recognitionRef.current.start();
-        } catch (err) {
-          console.error('Failed to restart recognition:', err);
-        }
-      }
     };
 
     recognitionRef.current = recognition;
@@ -107,24 +99,40 @@ export const useSpeechRecognition = (
       return;
     }
 
+    // Prevent starting if already listening
+    if (isListeningRef.current) {
+      console.log('Speech recognition already running, skipping start');
+      return;
+    }
+
     try {
       console.log('Starting speech recognition...');
       setTranscript('');
       setError(null);
+      isListeningRef.current = true;
       recognitionRef.current.start();
       setIsListening(true);
       console.log('Speech recognition started successfully');
     } catch (err: any) {
       console.error('Failed to start speech recognition:', err);
+      isListeningRef.current = false;
+      setIsListening(false);
       setError(err.message);
     }
   };
 
   const stopListening = () => {
-    if (recognitionRef.current && isListening) {
+    if (recognitionRef.current && isListeningRef.current) {
       console.log('Stopping speech recognition...');
-      recognitionRef.current.stop();
-      setIsListening(false);
+      try {
+        recognitionRef.current.stop();
+        isListeningRef.current = false;
+        setIsListening(false);
+      } catch (err) {
+        console.error('Error stopping recognition:', err);
+        isListeningRef.current = false;
+        setIsListening(false);
+      }
     }
   };
 

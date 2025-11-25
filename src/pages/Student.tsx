@@ -98,9 +98,9 @@ const Student = () => {
         }).catch((error) => {
           console.error('Error starting emotion detection:', error);
           toast({
-            title: "Camera Access Required",
-            description: "Please allow camera access for emotion detection.",
-            variant: "destructive"
+            title: "Camera Permission Needed",
+            description: "Please enable camera access in your browser settings to use emotion detection. The app will work without it.",
+            variant: "default"
           });
         });
       } catch (error) {
