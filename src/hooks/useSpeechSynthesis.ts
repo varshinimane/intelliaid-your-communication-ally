@@ -53,12 +53,14 @@ export const useSpeechSynthesis = (
       return;
     }
 
+    console.log('Speaking text:', text);
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
     
     if (selectedVoice) {
       utterance.voice = selectedVoice;
+      console.log('Using voice:', selectedVoice.name);
     }
     
     utterance.lang = language;
@@ -66,9 +68,18 @@ export const useSpeechSynthesis = (
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+    utterance.onstart = () => {
+      console.log('Speech started');
+      setIsSpeaking(true);
+    };
+    utterance.onend = () => {
+      console.log('Speech ended');
+      setIsSpeaking(false);
+    };
+    utterance.onerror = (event) => {
+      console.error('Speech error:', event);
+      setIsSpeaking(false);
+    };
 
     window.speechSynthesis.speak(utterance);
   }, [isSupported, selectedVoice, language]);

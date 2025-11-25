@@ -83,18 +83,32 @@ const Student = () => {
           console.error('Error creating session:', error);
         } else {
           setSessionId(data.id);
+          console.log('Session created:', data.id);
         }
 
         // Start emotion detection with error handling
-        await startEmotionDetection().catch((error) => {
+        console.log('Starting emotion detection...');
+        await startEmotionDetection().then(() => {
+          console.log('Emotion detection started successfully');
+          toast({
+            title: "Camera Active",
+            description: "Emotion detection is now running.",
+          });
+        }).catch((error) => {
           console.error('Error starting emotion detection:', error);
           toast({
-            title: "Camera Access",
-            description: "Camera access denied. Emotion detection disabled.",
+            title: "Camera Access Required",
+            description: "Please allow camera access for emotion detection.",
+            variant: "destructive"
           });
         });
       } catch (error) {
         console.error('Initialization error:', error);
+        toast({
+          title: "Initialization Error",
+          description: "Failed to start session. Please refresh.",
+          variant: "destructive"
+        });
       } finally {
         setIsInitializing(false);
       }
@@ -105,7 +119,7 @@ const Student = () => {
     return () => {
       stopEmotionDetection();
     };
-  }, [user]);
+  }, [user, startEmotionDetection, stopEmotionDetection, toast]);
 
   // Log emotions to database
   useEffect(() => {
@@ -127,11 +141,13 @@ const Student = () => {
   const handleRecordToggle = () => {
     if (isListening) {
       stopListening();
+      console.log('Recording stopped. Transcript:', currentText);
       toast({
         title: "Recording Stopped",
         description: "Your voice recording has been saved.",
       });
     } else {
+      console.log('Starting recording...');
       startListening();
       toast({
         title: "Recording Started",
@@ -212,10 +228,13 @@ const Student = () => {
   };
 
   const handleSpeakText = (text: string) => {
+    console.log('Speech synthesis requested for:', text);
     if (isSpeaking) {
       stopSpeaking();
+      console.log('Stopped speaking');
     } else {
       speak(text);
+      console.log('Started speaking');
     }
   };
 
