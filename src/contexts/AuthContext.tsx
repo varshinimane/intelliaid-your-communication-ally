@@ -18,6 +18,8 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, userType: 'student' | 'teacher') => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -114,8 +116,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     toast({
-      title: "Registration successful!",
-      description: "You can now sign in with your credentials."
+      title: "Check your email!",
+      description: "We've sent you a confirmation link. Please verify your email to continue."
+    });
+  };
+
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`
+      }
+    });
+
+    if (error) {
+      toast({
+        title: "Google sign-in failed",
+        description: error.message,
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`
+    });
+
+    if (error) {
+      toast({
+        title: "Password reset failed",
+        description: error.message,
+        variant: "destructive"
+      });
+      throw error;
+    }
+
+    toast({
+      title: "Check your email!",
+      description: "We've sent you a password reset link."
     });
   };
 
@@ -160,7 +200,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signInWithGoogle, resetPassword, signOut }}>
       {children}
     </AuthContext.Provider>
   );
