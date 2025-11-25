@@ -20,7 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const Student = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState("en-US");
   const [targetLanguage, setTargetLanguage] = useState("hi-IN"); // Default to Hindi
   const [currentText, setCurrentText] = useState("");
@@ -58,12 +58,21 @@ const Student = () => {
     isModelLoaded
   } = useFaceEmotion();
 
-  // Check authentication
+  // Check authentication and role
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/login');
+    if (!authLoading) {
+      if (!user) {
+        navigate('/login');
+      } else if (profile && profile.user_type !== 'student') {
+        toast({
+          title: "Access Denied",
+          description: "This page is only accessible to students.",
+          variant: "destructive"
+        });
+        navigate('/dashboard');
+      }
     }
-  }, [user, authLoading, navigate]);
+  }, [user, profile, authLoading, navigate, toast]);
 
   // Start a communication session and emotion detection
   useEffect(() => {
@@ -542,7 +551,7 @@ const Student = () => {
                   size="sm"
                   variant="ghost"
                   className="mt-2"
-                  onClick={() => handleSpeakText(simplifiedText)}
+                  onClick={() => speak(simplifiedText, selectedLanguage)}
                 >
                   <Volume2 className="mr-2 h-4 w-4" />
                   Speak
@@ -562,7 +571,7 @@ const Student = () => {
                   size="sm"
                   variant="ghost"
                   className="mt-2"
-                  onClick={() => handleSpeakText(translatedText)}
+                  onClick={() => speak(translatedText, targetLanguage)}
                 >
                   <Volume2 className="mr-2 h-4 w-4" />
                   Speak

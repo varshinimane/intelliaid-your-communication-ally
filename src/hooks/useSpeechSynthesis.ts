@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 interface UseSpeechSynthesisReturn {
-  speak: (text: string) => void;
+  speak: (text: string, language?: string) => void;
   stop: () => void;
   isSpeaking: boolean;
   isSupported: boolean;
@@ -47,23 +47,32 @@ export const useSpeechSynthesis = (
     };
   }, [language, isSupported]);
 
-  const speak = useCallback((text: string) => {
+  const speak = useCallback((text: string, overrideLanguage?: string) => {
     if (!isSupported) {
       console.warn('Speech synthesis not supported');
       return;
     }
 
-    console.log('Speaking text:', text);
+    const targetLang = overrideLanguage || language;
+    console.log('Speaking text:', text, 'in language:', targetLang);
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
     
-    if (selectedVoice) {
+    // Find a voice matching the target language
+    const targetVoice = voices.find(voice => 
+      voice.lang.startsWith(targetLang.split('-')[0])
+    );
+    
+    if (targetVoice) {
+      utterance.voice = targetVoice;
+      console.log('Using voice:', targetVoice.name, 'for language:', targetLang);
+    } else if (selectedVoice) {
       utterance.voice = selectedVoice;
-      console.log('Using voice:', selectedVoice.name);
+      console.log('Using default voice:', selectedVoice.name);
     }
     
-    utterance.lang = language;
+    utterance.lang = targetLang;
     utterance.rate = 0.9;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
@@ -82,7 +91,7 @@ export const useSpeechSynthesis = (
     };
 
     window.speechSynthesis.speak(utterance);
-  }, [isSupported, selectedVoice, language]);
+  }, [isSupported, selectedVoice, language, voices]);
 
   const stop = useCallback(() => {
     if (isSupported) {

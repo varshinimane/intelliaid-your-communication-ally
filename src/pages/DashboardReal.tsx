@@ -5,6 +5,7 @@ import { Smile, Meh, Frown, TrendingUp, Users, Brain } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import {
   LineChart,
   Line,
@@ -42,8 +43,9 @@ interface Message {
 }
 
 const DashboardReal = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [students, setStudents] = useState<Student[]>([]);
   const [emotionLogs, setEmotionLogs] = useState<EmotionLog[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -51,10 +53,19 @@ const DashboardReal = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/login');
+    if (!authLoading) {
+      if (!user) {
+        navigate('/login');
+      } else if (profile && profile.user_type !== 'teacher') {
+        toast({
+          title: "Access Denied",
+          description: "This page is only accessible to teachers.",
+          variant: "destructive"
+        });
+        navigate('/student');
+      }
     }
-  }, [user, authLoading, navigate]);
+  }, [user, profile, authLoading, navigate, toast]);
 
   useEffect(() => {
     if (user) {
