@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Brain, LayoutDashboard, MessageSquare, LogIn, LogOut } from "lucide-react";
+import { BrainCircuit, LayoutDashboard, MessageSquare, LogIn, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function Navbar() {
@@ -13,7 +13,7 @@ export function Navbar() {
       <div className="container flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center space-x-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-            <Brain className="h-6 w-6 text-primary-foreground" />
+            <BrainCircuit className="h-6 w-6 text-primary-foreground" />
           </div>
           <span className="text-xl font-bold">IntelliAid</span>
         </Link>
