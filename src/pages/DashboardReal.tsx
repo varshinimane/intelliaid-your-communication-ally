@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import AddStudentDialog from "@/components/AddStudentDialog";
 import {
   LineChart,
   Line,
@@ -216,11 +217,14 @@ const DashboardReal = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container px-4 py-8 max-w-7xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Teacher Dashboard</h1>
-          <p className="text-muted-foreground">
-            Monitor emotional trends, engagement, and student progress
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Teacher Dashboard</h1>
+            <p className="text-muted-foreground">
+              Monitor emotional trends, engagement, and student progress
+            </p>
+          </div>
+          {user && <AddStudentDialog teacherId={user.id} onStudentAdded={fetchDashboardData} />}
         </div>
 
         {/* Stats Overview */}
