@@ -92,7 +92,7 @@ export const useSpeechRecognition = (
     };
   }, [language, isSupported, onResult]);
 
-  const startListening = () => {
+  const startListening = async () => {
     if (!isSupported || !recognitionRef.current) {
       console.error('Speech recognition not available');
       setError('Speech recognition not available');
@@ -106,6 +106,9 @@ export const useSpeechRecognition = (
     }
 
     try {
+      // Request microphone permission explicitly
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      
       console.log('Starting speech recognition...');
       setTranscript('');
       setError(null);
@@ -117,7 +120,12 @@ export const useSpeechRecognition = (
       console.error('Failed to start speech recognition:', err);
       isListeningRef.current = false;
       setIsListening(false);
-      setError(err.message);
+      
+      if (err.name === 'NotAllowedError') {
+        setError('Microphone permission denied. Please allow microphone access.');
+      } else {
+        setError(err.message);
+      }
     }
   };
 
