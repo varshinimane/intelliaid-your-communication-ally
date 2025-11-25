@@ -66,7 +66,10 @@ export const useFaceEmotion = (): UseFaceEmotionReturn => {
   };
 
   const detectEmotion = useCallback(async () => {
-    if (!videoRef.current || !isModelLoaded) return;
+    if (!videoRef.current || !isModelLoaded) {
+      console.log('Cannot detect emotion - video or model not ready');
+      return;
+    }
 
     try {
       const detections = await faceapi
@@ -77,10 +80,12 @@ export const useFaceEmotion = (): UseFaceEmotionReturn => {
         const { emotion: detectedEmotion, confidence: detectedConfidence } = 
           getDominantEmotion(detections.expressions as any);
         
+        console.log('Emotion detected:', detectedEmotion, 'Confidence:', detectedConfidence);
         setEmotion(detectedEmotion);
         setConfidence(detectedConfidence);
       } else {
         // If no face detected, show neutral
+        console.log('No face detected - showing neutral');
         setEmotion('neutral');
         setConfidence(0.5);
       }
@@ -91,12 +96,18 @@ export const useFaceEmotion = (): UseFaceEmotionReturn => {
 
   const startDetection = useCallback(async () => {
     try {
+      console.log('Requesting camera access...');
       setError(null);
       
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'user' } 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        } 
       });
       
+      console.log('Camera access granted');
       streamRef.current = stream;
 
       if (!videoRef.current) {
@@ -110,18 +121,23 @@ export const useFaceEmotion = (): UseFaceEmotionReturn => {
 
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
+      console.log('Video stream started');
 
       setIsDetecting(true);
 
-      // Run detection every 1 second
-      intervalRef.current = window.setInterval(() => {
-        detectEmotion();
-      }, 1000);
+      // Wait a bit for video to stabilize, then start detection
+      setTimeout(() => {
+        console.log('Starting emotion detection interval');
+        intervalRef.current = window.setInterval(() => {
+          detectEmotion();
+        }, 2000); // Check every 2 seconds for better performance
+      }, 500);
 
     } catch (err: any) {
       console.error('Error starting emotion detection:', err);
       setError(err.message || 'Failed to start camera');
       setIsDetecting(false);
+      throw err; // Re-throw so parent can handle
     }
   }, [detectEmotion]);
 

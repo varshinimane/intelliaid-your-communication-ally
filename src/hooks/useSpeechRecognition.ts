@@ -77,7 +77,18 @@ export const useSpeechRecognition = (
     };
 
     recognition.onend = () => {
+      console.log('Speech recognition ended');
       setIsListening(false);
+      
+      // Auto-restart if still supposed to be listening (for continuous mode)
+      if (isListening && recognitionRef.current) {
+        console.log('Auto-restarting speech recognition...');
+        try {
+          recognitionRef.current.start();
+        } catch (err) {
+          console.error('Failed to restart recognition:', err);
+        }
+      }
     };
 
     recognitionRef.current = recognition;
@@ -111,6 +122,7 @@ export const useSpeechRecognition = (
 
   const stopListening = () => {
     if (recognitionRef.current && isListening) {
+      console.log('Stopping speech recognition...');
       recognitionRef.current.stop();
       setIsListening(false);
     }
