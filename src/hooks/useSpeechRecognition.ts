@@ -51,6 +51,7 @@ export const useSpeechRecognition = (
         
         if (result.isFinal) {
           finalTranscript += transcriptText + ' ';
+          console.log('Final transcript:', transcriptText, 'Confidence:', result[0].confidence);
           
           if (onResult) {
             onResult({
@@ -61,6 +62,7 @@ export const useSpeechRecognition = (
           }
         } else {
           interimTranscript += transcriptText;
+          console.log('Interim transcript:', transcriptText);
         }
       }
 
@@ -89,16 +91,20 @@ export const useSpeechRecognition = (
 
   const startListening = () => {
     if (!isSupported || !recognitionRef.current) {
+      console.error('Speech recognition not available');
       setError('Speech recognition not available');
       return;
     }
 
     try {
+      console.log('Starting speech recognition...');
       setTranscript('');
       setError(null);
       recognitionRef.current.start();
       setIsListening(true);
+      console.log('Speech recognition started successfully');
     } catch (err: any) {
+      console.error('Failed to start speech recognition:', err);
       setError(err.message);
     }
   };
