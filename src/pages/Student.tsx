@@ -22,6 +22,7 @@ const Student = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState("en-US");
+  const [targetLanguage, setTargetLanguage] = useState("hi-IN"); // Default to Hindi
   const [currentText, setCurrentText] = useState("");
   const [simplifiedText, setSimplifiedText] = useState("");
   const [translatedText, setTranslatedText] = useState("");
@@ -126,22 +127,46 @@ const Student = () => {
     if (!emotion || !sessionId || !user) return;
 
     const logEmotion = async () => {
-      await supabase.from('emotion_logs').insert({
+      const { data, error } = await supabase.from('emotion_logs').insert({
         student_id: user.id,
         session_id: sessionId,
         emotion_type: emotion,
         confidence_score: confidence,
         context: isListening ? 'speaking' : 'idle'
       });
+      
+      if (error) {
+        console.error('Error logging emotion:', error);
+      } else {
+        console.log('Emotion logged successfully:', emotion, confidence);
+      }
     };
 
     logEmotion();
   }, [emotion, sessionId, user, isListening, confidence]);
 
-  const handleRecordToggle = () => {
+  const handleRecordToggle = async () => {
     if (isListening) {
       stopListening();
       console.log('Recording stopped. Transcript:', currentText);
+      
+      // Save the speech message to database
+      if (currentText.trim() && sessionId && user) {
+        const { error } = await supabase.from('communication_messages').insert({
+          student_id: user.id,
+          session_id: sessionId,
+          message_type: 'speech',
+          original_text: currentText,
+          language_code: selectedLanguage
+        });
+        
+        if (error) {
+          console.error('Error saving speech message:', error);
+        } else {
+          console.log('Speech message saved to database');
+        }
+      }
+      
       toast({
         title: "Recording Stopped",
         description: "Your voice recording has been saved.",
@@ -175,6 +200,20 @@ const Student = () => {
       if (error) throw error;
 
       setSimplifiedText(data.result);
+      
+      // Save simplified text to database
+      if (sessionId && user) {
+        await supabase.from('communication_messages').insert({
+          student_id: user.id,
+          session_id: sessionId,
+          message_type: 'simplified',
+          original_text: currentText,
+          simplified_text: data.result,
+          language_code: selectedLanguage
+        });
+        console.log('Simplified message saved to database');
+      }
+      
       toast({
         title: "Text Simplified",
         description: "Your text has been simplified.",
@@ -203,7 +242,26 @@ const Student = () => {
 
     setIsProcessing(true);
     try {
-      const targetLang = selectedLanguage === 'en-US' ? 'Spanish' : 'English';
+      // Get the language name from the code
+      const languageMap: Record<string, string> = {
+        'en-US': 'English',
+        'hi-IN': 'Hindi',
+        'ta-IN': 'Tamil',
+        'te-IN': 'Telugu',
+        'bn-IN': 'Bengali',
+        'mr-IN': 'Marathi',
+        'gu-IN': 'Gujarati',
+        'kn-IN': 'Kannada',
+        'ml-IN': 'Malayalam',
+        'pa-IN': 'Punjabi',
+        'ur-IN': 'Urdu',
+        'es-ES': 'Spanish',
+        'fr-FR': 'French',
+        'de-DE': 'German',
+        'zh-CN': 'Chinese'
+      };
+      
+      const targetLang = languageMap[targetLanguage] || 'Hindi';
       const { data, error } = await supabase.functions.invoke('process-communication', {
         body: { text: currentText, action: 'translate', targetLanguage: targetLang }
       });
@@ -211,6 +269,20 @@ const Student = () => {
       if (error) throw error;
 
       setTranslatedText(data.result);
+      
+      // Save translated text to database
+      if (sessionId && user) {
+        await supabase.from('communication_messages').insert({
+          student_id: user.id,
+          session_id: sessionId,
+          message_type: 'translated',
+          original_text: currentText,
+          translated_text: data.result,
+          language_code: selectedLanguage
+        });
+        console.log('Translated message saved to database');
+      }
+      
       toast({
         title: "Text Translated",
         description: `Translated to ${targetLang}.`,
@@ -264,7 +336,7 @@ const Student = () => {
 
     // Save to database
     if (sessionId && user) {
-      await supabase.from('communication_messages').insert({
+      const { error } = await supabase.from('communication_messages').insert({
         student_id: user.id,
         session_id: sessionId,
         message_type: 'visual_card',
@@ -272,6 +344,12 @@ const Student = () => {
         original_text: message,
         language_code: selectedLanguage
       });
+      
+      if (error) {
+        console.error('Error saving message:', error);
+      } else {
+        console.log('Visual card message saved to database');
+      }
     }
   };
 
@@ -332,22 +410,62 @@ const Student = () => {
           </h2>
           
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                Select Language
-              </label>
-              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                <SelectTrigger className="w-full md:w-64">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en-US">English (US)</SelectItem>
-                  <SelectItem value="es-ES">Spanish</SelectItem>
-                  <SelectItem value="fr-FR">French</SelectItem>
-                  <SelectItem value="de-DE">German</SelectItem>
-                  <SelectItem value="zh-CN">Chinese</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Input Language
+                </label>
+                <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en-US">English</SelectItem>
+                    <SelectItem value="hi-IN">हिंदी (Hindi)</SelectItem>
+                    <SelectItem value="ta-IN">தமிழ் (Tamil)</SelectItem>
+                    <SelectItem value="te-IN">తెలుగు (Telugu)</SelectItem>
+                    <SelectItem value="bn-IN">বাংলা (Bengali)</SelectItem>
+                    <SelectItem value="mr-IN">मराठी (Marathi)</SelectItem>
+                    <SelectItem value="gu-IN">ગુજરાતી (Gujarati)</SelectItem>
+                    <SelectItem value="kn-IN">ಕನ್ನಡ (Kannada)</SelectItem>
+                    <SelectItem value="ml-IN">മലയാളം (Malayalam)</SelectItem>
+                    <SelectItem value="pa-IN">ਪੰਜਾਬੀ (Punjabi)</SelectItem>
+                    <SelectItem value="ur-IN">اردو (Urdu)</SelectItem>
+                    <SelectItem value="es-ES">Spanish</SelectItem>
+                    <SelectItem value="fr-FR">French</SelectItem>
+                    <SelectItem value="de-DE">German</SelectItem>
+                    <SelectItem value="zh-CN">Chinese</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Translate To
+                </label>
+                <Select value={targetLanguage} onValueChange={setTargetLanguage}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en-US">English</SelectItem>
+                    <SelectItem value="hi-IN">हिंदी (Hindi)</SelectItem>
+                    <SelectItem value="ta-IN">தமிழ் (Tamil)</SelectItem>
+                    <SelectItem value="te-IN">తెలుగు (Telugu)</SelectItem>
+                    <SelectItem value="bn-IN">বাংলা (Bengali)</SelectItem>
+                    <SelectItem value="mr-IN">मराठी (Marathi)</SelectItem>
+                    <SelectItem value="gu-IN">ગુજરાતી (Gujarati)</SelectItem>
+                    <SelectItem value="kn-IN">ಕನ್ನಡ (Kannada)</SelectItem>
+                    <SelectItem value="ml-IN">മലയാളം (Malayalam)</SelectItem>
+                    <SelectItem value="pa-IN">ਪੰਜਾਬੀ (Punjabi)</SelectItem>
+                    <SelectItem value="ur-IN">اردو (Urdu)</SelectItem>
+                    <SelectItem value="es-ES">Spanish</SelectItem>
+                    <SelectItem value="fr-FR">French</SelectItem>
+                    <SelectItem value="de-DE">German</SelectItem>
+                    <SelectItem value="zh-CN">Chinese</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {!speechRecognitionSupported && (
