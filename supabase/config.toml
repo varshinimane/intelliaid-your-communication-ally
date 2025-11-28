@@ -2,3 +2,6 @@ project_id = "lfrsmkjshmbnbdwqjfyx"
 
 [functions.process-communication]
 verify_jwt = false
+
+[functions.transcribe-audio]
+verify_jwt = false
