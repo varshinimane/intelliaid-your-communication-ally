@@ -442,7 +442,7 @@ const Student = () => {
       description: message,
     });
 
-    // Save to database
+    // Save to communication_messages
     if (sessionId && user) {
       const { error } = await supabase.from('communication_messages').insert({
         student_id: user.id,
@@ -457,6 +457,37 @@ const Student = () => {
         console.error('Error saving message:', error);
       } else {
         console.log('Visual card message saved to database');
+      }
+    }
+
+    // Send visual card to teacher
+    if (user) {
+      const { data: teacherData } = await supabase
+        .from('teacher_students')
+        .select('teacher_id')
+        .eq('student_id', user.id)
+        .maybeSingle();
+
+      if (teacherData?.teacher_id) {
+        const { error: insertError } = await supabase
+          .from('student_teacher_messages')
+          .insert({
+            student_id: user.id,
+            teacher_id: teacherData.teacher_id,
+            original_text: message,
+            simplified_text: `Student used visual card: ${label} ${emoji}`,
+            language_code: selectedLanguage,
+          });
+
+        if (insertError) {
+          console.error('Error sending visual card to teacher:', insertError);
+        } else {
+          console.log('Visual card sent to teacher successfully');
+          toast({
+            title: "Message Sent",
+            description: "Your symbol message was sent to your teacher!",
+          });
+        }
       }
     }
   };

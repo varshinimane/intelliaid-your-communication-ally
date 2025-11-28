@@ -172,16 +172,30 @@ const StudentMessagesPanel = ({ teacherId }: StudentMessagesPanelProps) => {
                 </div>
 
                 <div className="space-y-3">
-                  {/* Original Speech */}
-                  <div className="bg-muted/50 p-3 rounded-md">
+                  {/* Original Message - Display with visual card styling if it contains emoji */}
+                  <div className={`p-3 rounded-md ${
+                    /[\u{1F300}-\u{1F9FF}]/u.test(message.original_text)
+                      ? 'bg-accent/20 border border-accent/40'
+                      : 'bg-muted/50'
+                  }`}>
                     <div className="flex items-center gap-2 mb-1">
                       <Languages className="h-3 w-3 text-muted-foreground" />
                       <span className="text-xs font-medium text-muted-foreground">
-                        Original ({getLanguageName(message.language_code)})
+                        {/[\u{1F300}-\u{1F9FF}]/u.test(message.original_text) 
+                          ? 'Visual Symbol Card' 
+                          : `Original (${getLanguageName(message.language_code)})`
+                        }
                       </span>
                     </div>
-                    <p className="text-sm text-foreground italic">
-                      &quot;{message.original_text}&quot;
+                    <p className={`text-foreground ${
+                      /[\u{1F300}-\u{1F9FF}]/u.test(message.original_text)
+                        ? 'text-2xl font-medium'
+                        : 'text-sm italic'
+                    }`}>
+                      {/[\u{1F300}-\u{1F9FF}]/u.test(message.original_text) 
+                        ? message.original_text 
+                        : `"${message.original_text}"`
+                      }
                     </p>
                   </div>
 
