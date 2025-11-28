@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import AddStudentDialog from "@/components/AddStudentDialog";
 import SendInstructionDialog from "@/components/SendInstructionDialog";
 import LiveEmotionMonitor from "@/components/LiveEmotionMonitor";
+import StudentMessagesPanel from "@/components/StudentMessagesPanel";
 import {
   LineChart,
   Line,
@@ -194,7 +195,7 @@ const DashboardReal = () => {
     }
   };
 
-  // Calculate emotion trends for the last 7 days
+  // Calculate emotion trends for the last 7 days with all emotions
   const getEmotionTrends = () => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -209,15 +210,19 @@ const DashboardReal = () => {
         return logDate.toDateString() === date.toDateString();
       });
 
-      const happy = dayLogs.filter(l => ['happy', 'surprised'].includes(l.emotion_type)).length;
+      const happy = dayLogs.filter(l => l.emotion_type === 'happy').length;
+      const surprised = dayLogs.filter(l => l.emotion_type === 'surprised').length;
       const neutral = dayLogs.filter(l => l.emotion_type === 'neutral').length;
-      const sad = dayLogs.filter(l => ['sad', 'angry', 'fearful', 'scared', 'disgusted', 'confused', 'stressed', 'overwhelmed', 'bored'].includes(l.emotion_type)).length;
+      const bored = dayLogs.filter(l => l.emotion_type === 'bored').length;
+      const sad = dayLogs.filter(l => ['sad', 'angry', 'fearful', 'scared', 'disgusted', 'confused', 'stressed', 'overwhelmed'].includes(l.emotion_type)).length;
       const total = dayLogs.length || 1;
 
       return {
         day: days[date.getDay()],
         happy: Math.round((happy / total) * 100),
+        surprised: Math.round((surprised / total) * 100),
         neutral: Math.round((neutral / total) * 100),
+        bored: Math.round((bored / total) * 100),
         sad: Math.round((sad / total) * 100),
       };
     });
@@ -304,6 +309,9 @@ const DashboardReal = () => {
         {/* Live Emotion Monitor */}
         {user && <LiveEmotionMonitor teacherId={user.id} />}
 
+        {/* Student Messages Panel */}
+        {user && <StudentMessagesPanel teacherId={user.id} />}
+
         {/* Stats Overview */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card className="p-6">
@@ -365,6 +373,15 @@ const DashboardReal = () => {
                   stroke="hsl(var(--emotion-happy))"
                   strokeWidth={2}
                   dot={{ fill: "hsl(var(--emotion-happy))" }}
+                  name="Happy"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="surprised"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  dot={{ fill: "#f59e0b" }}
+                  name="Surprised"
                 />
                 <Line
                   type="monotone"
@@ -372,6 +389,15 @@ const DashboardReal = () => {
                   stroke="hsl(var(--emotion-neutral))"
                   strokeWidth={2}
                   dot={{ fill: "hsl(var(--emotion-neutral))" }}
+                  name="Neutral"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="bored"
+                  stroke="#6b7280"
+                  strokeWidth={2}
+                  dot={{ fill: "#6b7280" }}
+                  name="Bored"
                 />
                 <Line
                   type="monotone"
@@ -379,21 +405,30 @@ const DashboardReal = () => {
                   stroke="hsl(var(--emotion-sad))"
                   strokeWidth={2}
                   dot={{ fill: "hsl(var(--emotion-sad))" }}
+                  name="Sad/Stressed"
                 />
               </LineChart>
             </ResponsiveContainer>
-            <div className="flex items-center justify-center gap-6 mt-4">
+            <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full bg-emotion-happy" />
-                <span className="text-sm">Happy</span>
+                <span className="text-xs">Happy</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: '#f59e0b' }} />
+                <span className="text-xs">Surprised</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full bg-emotion-neutral" />
-                <span className="text-sm">Neutral</span>
+                <span className="text-xs">Neutral</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: '#6b7280' }} />
+                <span className="text-xs">Bored</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full bg-emotion-sad" />
-                <span className="text-sm">Sad</span>
+                <span className="text-xs">Sad/Stressed</span>
               </div>
             </div>
           </Card>

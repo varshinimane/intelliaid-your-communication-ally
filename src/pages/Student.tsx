@@ -234,11 +234,14 @@ const Student = () => {
           } else {
             console.log('Speech message saved to database');
           }
+
+          // Process and send to teacher automatically
+          await processAndSendToTeacher(transcribedText);
         }
         
         toast({
           title: "Recording Stopped",
-          description: "Your voice has been transcribed!",
+          description: "Your voice has been transcribed and sent to your teacher!",
         });
       } catch (error: any) {
         console.error('Error stopping recording:', error);
@@ -264,6 +267,53 @@ const Student = () => {
           variant: "destructive"
         });
       }
+    }
+  };
+
+  const processAndSendToTeacher = async (originalText: string) => {
+    try {
+      setIsProcessing(true);
+      
+      // Simplify the text using AI
+      const { data: simplifyData, error: simplifyError } = await supabase.functions.invoke(
+        'process-communication',
+        { body: { text: originalText, action: 'simplify' } }
+      );
+
+      if (simplifyError) throw simplifyError;
+
+      const simplifiedText = simplifyData?.result || originalText;
+
+      // Get teacher ID
+      const { data: teacherData } = await supabase
+        .from('teacher_students')
+        .select('teacher_id')
+        .eq('student_id', user?.id)
+        .maybeSingle();
+
+      if (!teacherData?.teacher_id) {
+        console.log('No teacher assigned to this student');
+        return;
+      }
+
+      // Send message to teacher
+      const { error: insertError } = await supabase
+        .from('student_teacher_messages')
+        .insert({
+          student_id: user.id,
+          teacher_id: teacherData.teacher_id,
+          original_text: originalText,
+          simplified_text: simplifiedText,
+          language_code: selectedLanguage,
+        });
+
+      if (insertError) throw insertError;
+
+      console.log('Message sent to teacher successfully');
+    } catch (error) {
+      console.error('Error processing and sending to teacher:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 

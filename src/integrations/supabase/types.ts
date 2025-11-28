@@ -184,6 +184,57 @@ export type Database = {
         }
         Relationships: []
       }
+      student_teacher_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          language_code: string | null
+          original_text: string
+          simplified_text: string | null
+          student_id: string
+          teacher_id: string
+          translated_text: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          language_code?: string | null
+          original_text: string
+          simplified_text?: string | null
+          student_id: string
+          teacher_id: string
+          translated_text?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          language_code?: string | null
+          original_text?: string
+          simplified_text?: string | null
+          student_id?: string
+          teacher_id?: string
+          translated_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_teacher_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_teacher_messages_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_instructions: {
         Row: {
           completed_at: string | null
