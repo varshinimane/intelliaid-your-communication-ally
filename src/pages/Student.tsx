@@ -413,9 +413,14 @@ const Student = () => {
       case 'happy': return '😊';
       case 'sad': return '😢';
       case 'angry': return '😡';
-      case 'fearful': return '😰';
+      case 'fearful':
+      case 'scared': return '😰';
       case 'surprised': return '😲';
       case 'disgusted': return '🤢';
+      case 'confused': return '😕';
+      case 'stressed': return '😫';
+      case 'overwhelmed': return '😵';
+      case 'bored': return '😑';
       default: return '😐';
     }
   };

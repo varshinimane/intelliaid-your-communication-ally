@@ -57,7 +57,43 @@ export const useFaceEmotion = (): UseFaceEmotionReturn => {
   }, []);
 
   const getDominantEmotion = (emotions: EmotionScores): { emotion: string; confidence: number } => {
-    const entries = Object.entries(emotions);
+    // Map face-api emotions to extended emotion set including neurodiverse-friendly emotions
+    const emotionMapping: Record<string, string> = {
+      'neutral': 'neutral',
+      'happy': 'happy',
+      'sad': 'sad',
+      'angry': 'angry',
+      'fearful': 'scared',  // Map fearful to scared
+      'disgusted': 'disgusted',
+      'surprised': 'surprised'
+    };
+
+    // Extended emotion detection with compound patterns
+    const { neutral, happy, sad, angry, fearful, disgusted, surprised } = emotions;
+    
+    // Detect complex emotional states for neurodiverse students
+    const fearScore = fearful;
+    const confusionScore = (surprised * 0.6 + neutral * 0.4); // Surprised + neutral = confused
+    const stressScore = (angry * 0.4 + fearful * 0.4 + sad * 0.2); // Mix of negative emotions
+    const overwhelmedScore = (fearful * 0.5 + sad * 0.3 + angry * 0.2); // High fear + sadness
+    const boredScore = (neutral * 0.7 + sad * 0.3); // High neutral + slight sadness
+    
+    // Create enhanced emotion object
+    const enhancedEmotions = {
+      neutral,
+      happy,
+      sad,
+      angry,
+      scared: fearScore,
+      disgusted,
+      surprised,
+      confused: confusionScore,
+      stressed: stressScore,
+      overwhelmed: overwhelmedScore,
+      bored: boredScore
+    };
+
+    const entries = Object.entries(enhancedEmotions);
     const [emotion, confidence] = entries.reduce((max, entry) => 
       entry[1] > max[1] ? entry : max
     );
