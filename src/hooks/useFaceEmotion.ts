@@ -57,43 +57,48 @@ export const useFaceEmotion = (): UseFaceEmotionReturn => {
   }, []);
 
   const getDominantEmotion = (emotions: EmotionScores): { emotion: string; confidence: number } => {
-    // Map face-api emotions to extended emotion set including neurodiverse-friendly emotions
-    const emotionMapping: Record<string, string> = {
-      'neutral': 'neutral',
-      'happy': 'happy',
-      'sad': 'sad',
-      'angry': 'angry',
-      'fearful': 'scared',  // Map fearful to scared
-      'disgusted': 'disgusted',
-      'surprised': 'surprised'
-    };
-
     // Extended emotion detection with compound patterns
     const { neutral, happy, sad, angry, fearful, disgusted, surprised } = emotions;
     
-    // Detect complex emotional states for neurodiverse students
-    const fearScore = fearful;
-    const confusionScore = (surprised * 0.6 + neutral * 0.4); // Surprised + neutral = confused
-    const stressScore = (angry * 0.4 + fearful * 0.4 + sad * 0.2); // Mix of negative emotions
-    const overwhelmedScore = (fearful * 0.5 + sad * 0.3 + angry * 0.2); // High fear + sadness
-    const boredScore = (neutral * 0.7 + sad * 0.3); // High neutral + slight sadness
+    // First, check for compound emotional states (these take priority when conditions are met)
+    // These represent more nuanced emotions important for neurodiverse students
     
-    // Create enhanced emotion object
-    const enhancedEmotions = {
+    // Confused: High surprise + moderate neutral (threshold: 0.35)
+    const confusionScore = (surprised * 0.7 + neutral * 0.3);
+    if (surprised > 0.3 && neutral > 0.2 && confusionScore > 0.35) {
+      return { emotion: 'confused', confidence: confusionScore };
+    }
+    
+    // Stressed: Mix of negative emotions without clear dominant (threshold: 0.4)
+    const stressScore = (angry * 0.35 + fearful * 0.35 + sad * 0.3);
+    if (angry > 0.2 && fearful > 0.2 && stressScore > 0.4) {
+      return { emotion: 'stressed', confidence: stressScore };
+    }
+    
+    // Overwhelmed: High fear + sadness (threshold: 0.45)
+    const overwhelmedScore = (fearful * 0.6 + sad * 0.4);
+    if (fearful > 0.35 && sad > 0.25 && overwhelmedScore > 0.45) {
+      return { emotion: 'overwhelmed', confidence: overwhelmedScore };
+    }
+    
+    // Bored: Very high neutral + slight sadness, low other emotions (threshold: 0.5)
+    const boredScore = (neutral * 0.8 + sad * 0.2);
+    if (neutral > 0.6 && sad > 0.1 && happy < 0.2 && surprised < 0.2 && boredScore > 0.5) {
+      return { emotion: 'bored', confidence: boredScore };
+    }
+    
+    // If no compound emotions detected, use basic emotions
+    const basicEmotions = {
       neutral,
       happy,
       sad,
       angry,
-      scared: fearScore,
+      scared: fearful,  // Map fearful to scared
       disgusted,
-      surprised,
-      confused: confusionScore,
-      stressed: stressScore,
-      overwhelmed: overwhelmedScore,
-      bored: boredScore
+      surprised
     };
 
-    const entries = Object.entries(enhancedEmotions);
+    const entries = Object.entries(basicEmotions);
     const [emotion, confidence] = entries.reduce((max, entry) => 
       entry[1] > max[1] ? entry : max
     );

@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { useFaceEmotion } from "@/hooks/useFaceEmotion";
+import { useMediaRecorder } from "@/hooks/useMediaRecorder";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import InstructionCard from "@/components/InstructionCard";
@@ -32,6 +33,14 @@ const Student = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [instructions, setInstructions] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  
+  const { 
+    isRecording: isMediaRecording,
+    startRecording: startMediaRecording, 
+    stopRecording: stopMediaRecording,
+    isSupported: mediaRecorderSupported,
+    error: mediaRecorderError
+  } = useMediaRecorder();
   
   const { 
     isListening, 
@@ -201,38 +210,60 @@ const Student = () => {
   }, [emotion, sessionId, user, isListening, confidence]);
 
   const handleRecordToggle = async () => {
-    if (isListening) {
-      stopListening();
-      console.log('Recording stopped. Transcript:', currentText);
-      
-      // Save the speech message to database
-      if (currentText.trim() && sessionId && user) {
-        const { error } = await supabase.from('communication_messages').insert({
-          student_id: user.id,
-          session_id: sessionId,
-          message_type: 'speech',
-          original_text: currentText,
-          language_code: selectedLanguage
-        });
+    // Use MediaRecorder for better mobile support
+    if (isMediaRecording) {
+      try {
+        console.log('Stopping recording...');
+        const transcribedText = await stopMediaRecording();
+        console.log('Recording stopped. Transcribed text:', transcribedText);
         
-        if (error) {
-          console.error('Error saving speech message:', error);
-        } else {
-          console.log('Speech message saved to database');
+        setCurrentText(prev => prev + (prev ? ' ' : '') + transcribedText);
+        
+        // Save the speech message to database
+        if (transcribedText.trim() && sessionId && user) {
+          const { error } = await supabase.from('communication_messages').insert({
+            student_id: user.id,
+            session_id: sessionId,
+            message_type: 'speech',
+            original_text: transcribedText,
+            language_code: selectedLanguage
+          });
+          
+          if (error) {
+            console.error('Error saving speech message:', error);
+          } else {
+            console.log('Speech message saved to database');
+          }
         }
+        
+        toast({
+          title: "Recording Stopped",
+          description: "Your voice has been transcribed!",
+        });
+      } catch (error: any) {
+        console.error('Error stopping recording:', error);
+        toast({
+          title: "Transcription Error",
+          description: error.message || "Failed to transcribe audio. Please try again.",
+          variant: "destructive"
+        });
       }
-      
-      toast({
-        title: "Recording Stopped",
-        description: "Your voice recording has been saved.",
-      });
     } else {
-      console.log('Starting recording...');
-      startListening();
-      toast({
-        title: "Recording Started",
-        description: "Speak clearly into your microphone.",
-      });
+      try {
+        console.log('Starting recording...');
+        await startMediaRecording();
+        toast({
+          title: "Recording Started",
+          description: "Speak clearly into your microphone. Tap again to stop.",
+        });
+      } catch (error: any) {
+        console.error('Error starting recording:', error);
+        toast({
+          title: "Recording Error",
+          description: error.message || "Failed to access microphone. Please check permissions.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -568,9 +599,15 @@ const Student = () => {
               </div>
             </div>
 
-            {!speechRecognitionSupported && (
+            {!mediaRecorderSupported && (
               <div className="text-sm text-destructive">
-                Speech recognition is not supported in your browser. Please use Chrome or Edge.
+                Audio recording is not supported in your browser. Please try a modern browser like Chrome, Safari, or Edge.
+              </div>
+            )}
+
+            {mediaRecorderError && (
+              <div className="text-sm text-destructive">
+                Recording error: {mediaRecorderError}
               </div>
             )}
 
@@ -578,15 +615,15 @@ const Student = () => {
               <Button
                 size="lg"
                 onClick={handleRecordToggle}
-                disabled={!speechRecognitionSupported}
+                disabled={!mediaRecorderSupported || isProcessing}
                 className={`flex-1 ${
-                  isListening
+                  isMediaRecording
                     ? "bg-destructive hover:bg-destructive/90"
                     : "bg-primary hover:bg-primary/90"
                 }`}
               >
                 <Mic className="mr-2 h-5 w-5" />
-                {isListening ? "Stop Recording" : "Start Recording"}
+                {isMediaRecording ? "Stop Recording" : "Start Recording"}
               </Button>
             </div>
 
