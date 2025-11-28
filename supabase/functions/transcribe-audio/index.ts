@@ -61,18 +61,19 @@ serve(async (req) => {
     formData.append('file', blob, 'audio.webm');
     formData.append('model', 'whisper-1');
 
-    // Use Lovable AI Gateway for Whisper
+    // Use OpenAI-compatible transcription endpoint
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    console.log('Sending to Lovable AI Gateway...');
+    console.log('Sending to Lovable AI Gateway for transcription...');
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/audio/transcriptions', {
+    const response = await fetch('https://openrouter.ai/api/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'HTTP-Referer': 'https://lovable.dev',
       },
       body: formData,
     });
