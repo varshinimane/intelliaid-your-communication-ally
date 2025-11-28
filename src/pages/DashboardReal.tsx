@@ -104,6 +104,48 @@ const DashboardReal = () => {
     }
   }, [user]);
 
+  // Subscribe to real-time instruction completion notifications
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('teacher-instruction-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'teacher_instructions',
+          filter: `teacher_id=eq.${user.id}`,
+        },
+        (payload: any) => {
+          // Check if assignment was just completed
+          if (payload.new.completed_at && !payload.old.completed_at) {
+            // Fetch student name
+            supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', payload.new.student_id)
+              .single()
+              .then(({ data: studentData }) => {
+                toast({
+                  title: "Assignment Completed! 🎉",
+                  description: `${studentData?.full_name || 'A student'} has submitted "${payload.new.title}"`,
+                });
+              });
+            
+            // Refresh dashboard data
+            fetchDashboardData();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, toast]);
+
   const fetchDashboardData = async () => {
     try {
       // Fetch students linked to this teacher
@@ -169,7 +211,7 @@ const DashboardReal = () => {
 
       const happy = dayLogs.filter(l => ['happy', 'surprised'].includes(l.emotion_type)).length;
       const neutral = dayLogs.filter(l => l.emotion_type === 'neutral').length;
-      const sad = dayLogs.filter(l => ['sad', 'angry', 'fearful', 'disgusted'].includes(l.emotion_type)).length;
+      const sad = dayLogs.filter(l => ['sad', 'angry', 'fearful', 'scared', 'disgusted', 'confused', 'stressed', 'overwhelmed', 'bored'].includes(l.emotion_type)).length;
       const total = dayLogs.length || 1;
 
       return {
@@ -183,12 +225,14 @@ const DashboardReal = () => {
 
   // Calculate communication method distribution
   const getEngagementData = () => {
-    const voice = messages.filter(m => m.message_type === 'voice' || m.message_type === 'text').length;
+    const voiceText = messages.filter(m => 
+      ['speech', 'simplified', 'translated'].includes(m.message_type)
+    ).length;
     const cards = messages.filter(m => m.message_type === 'visual_card').length;
     const total = messages.length || 1;
 
     return [
-      { name: "Voice/Text", value: Math.round((voice / total) * 100) },
+      { name: "Voice/Text", value: Math.round((voiceText / total) * 100) },
       { name: "Visual Cards", value: Math.round((cards / total) * 100) },
     ];
   };

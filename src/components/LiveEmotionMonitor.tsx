@@ -30,9 +30,14 @@ const LiveEmotionMonitor = ({ teacherId }: LiveEmotionMonitorProps) => {
       sad: 'text-emotion-sad bg-emotion-sad/10 border-emotion-sad',
       angry: 'text-emotion-angry bg-emotion-angry/10 border-emotion-angry',
       fearful: 'text-emotion-fearful bg-emotion-fearful/10 border-emotion-fearful',
+      scared: 'text-emotion-fearful bg-emotion-fearful/10 border-emotion-fearful',
       surprised: 'text-emotion-surprised bg-emotion-surprised/10 border-emotion-surprised',
       neutral: 'text-emotion-neutral bg-emotion-neutral/10 border-emotion-neutral',
       disgusted: 'text-muted-foreground bg-muted border-muted',
+      confused: 'text-amber-600 bg-amber-50 border-amber-300 dark:text-amber-400 dark:bg-amber-950 dark:border-amber-800',
+      stressed: 'text-red-600 bg-red-50 border-red-300 dark:text-red-400 dark:bg-red-950 dark:border-red-800',
+      overwhelmed: 'text-purple-600 bg-purple-50 border-purple-300 dark:text-purple-400 dark:bg-purple-950 dark:border-purple-800',
+      bored: 'text-gray-600 bg-gray-50 border-gray-300 dark:text-gray-400 dark:bg-gray-800 dark:border-gray-700',
     };
     return colors[emotion] || colors.neutral;
   };
@@ -43,15 +48,20 @@ const LiveEmotionMonitor = ({ teacherId }: LiveEmotionMonitorProps) => {
       sad: '😢',
       angry: '😡',
       fearful: '😰',
+      scared: '😰',
       surprised: '😲',
       disgusted: '🤢',
       neutral: '😐',
+      confused: '😕',
+      stressed: '😫',
+      overwhelmed: '😵',
+      bored: '😑',
     };
     return emojis[emotion] || '😐';
   };
 
   const isConcerningEmotion = (emotion: string) => {
-    return ['sad', 'angry', 'fearful', 'disgusted'].includes(emotion);
+    return ['sad', 'angry', 'fearful', 'scared', 'disgusted', 'confused', 'stressed', 'overwhelmed', 'bored'].includes(emotion);
   };
 
   useEffect(() => {
