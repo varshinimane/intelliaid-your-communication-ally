@@ -33,6 +33,7 @@ const Student = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [instructions, setInstructions] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [liveTranscript, setLiveTranscript] = useState("");
   
   const { 
     isRecording: isMediaRecording,
@@ -217,6 +218,7 @@ const Student = () => {
         const transcribedText = await stopMediaRecording();
         console.log('Recording stopped. Transcribed text:', transcribedText);
         
+        setLiveTranscript("");
         setCurrentText(prev => prev + (prev ? ' ' : '') + transcribedText);
         
         // Save the speech message to database
@@ -254,6 +256,7 @@ const Student = () => {
     } else {
       try {
         console.log('Starting recording...');
+        setLiveTranscript("Listening...");
         await startMediaRecording();
         toast({
           title: "Recording Started",
@@ -676,6 +679,17 @@ const Student = () => {
                 {isMediaRecording ? "Stop Recording" : "Start Recording"}
               </Button>
             </div>
+
+            {/* Live transcript while recording */}
+            {isMediaRecording && liveTranscript && (
+              <Card className="p-6 bg-primary/10 border-primary/20 animate-pulse">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-3 h-3 bg-destructive rounded-full animate-pulse"></div>
+                  <p className="text-sm font-semibold text-primary">Recording in Progress</p>
+                </div>
+                <p className="text-lg text-foreground font-medium">{liveTranscript}</p>
+              </Card>
+            )}
 
             {/* Current transcript */}
             {(isListening || currentText) && (
