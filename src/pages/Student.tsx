@@ -14,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { useFaceEmotion } from "@/hooks/useFaceEmotion";
-import { useMediaRecorder } from "@/hooks/useMediaRecorder";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import InstructionCard from "@/components/InstructionCard";
@@ -33,15 +32,6 @@ const Student = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [instructions, setInstructions] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [liveTranscript, setLiveTranscript] = useState("");
-  
-  const { 
-    isRecording: isMediaRecording,
-    startRecording: startMediaRecording, 
-    stopRecording: stopMediaRecording,
-    isSupported: mediaRecorderSupported,
-    error: mediaRecorderError
-  } = useMediaRecorder();
   
   const { 
     isListening, 
@@ -211,65 +201,44 @@ const Student = () => {
   }, [emotion, sessionId, user, isListening, confidence]);
 
   const handleRecordToggle = async () => {
-    // Use MediaRecorder for better mobile support
-    if (isMediaRecording) {
-      try {
-        console.log('Stopping recording...');
-        const transcribedText = await stopMediaRecording();
-        console.log('Recording stopped. Transcribed text:', transcribedText);
-        
-        setLiveTranscript("");
-        setCurrentText(prev => prev + (prev ? ' ' : '') + transcribedText);
-        
+    if (isListening) {
+      console.log('Stopping speech recognition...');
+      stopListening();
+      
+      const transcribedText = currentText;
+      console.log('Stopped. Transcribed text:', transcribedText);
+      
+      if (transcribedText.trim() && sessionId && user) {
         // Save the speech message to database
-        if (transcribedText.trim() && sessionId && user) {
-          const { error } = await supabase.from('communication_messages').insert({
-            student_id: user.id,
-            session_id: sessionId,
-            message_type: 'speech',
-            original_text: transcribedText,
-            language_code: selectedLanguage
-          });
-          
-          if (error) {
-            console.error('Error saving speech message:', error);
-          } else {
-            console.log('Speech message saved to database');
-          }
-
-          // Process and send to teacher automatically
-          await processAndSendToTeacher(transcribedText);
+        const { error } = await supabase.from('communication_messages').insert({
+          student_id: user.id,
+          session_id: sessionId,
+          message_type: 'speech',
+          original_text: transcribedText,
+          language_code: selectedLanguage
+        });
+        
+        if (error) {
+          console.error('Error saving speech message:', error);
+        } else {
+          console.log('Speech message saved to database');
         }
+
+        // Process and send to teacher automatically
+        await processAndSendToTeacher(transcribedText);
         
         toast({
           title: "Recording Stopped",
           description: "Your voice has been transcribed and sent to your teacher!",
         });
-      } catch (error: any) {
-        console.error('Error stopping recording:', error);
-        toast({
-          title: "Transcription Error",
-          description: error.message || "Failed to transcribe audio. Please try again.",
-          variant: "destructive"
-        });
       }
     } else {
-      try {
-        console.log('Starting recording...');
-        setLiveTranscript("Listening...");
-        await startMediaRecording();
-        toast({
-          title: "Recording Started",
-          description: "Speak clearly into your microphone. Tap again to stop.",
-        });
-      } catch (error: any) {
-        console.error('Error starting recording:', error);
-        toast({
-          title: "Recording Error",
-          description: error.message || "Failed to access microphone. Please check permissions.",
-          variant: "destructive"
-        });
-      }
+      console.log('Starting speech recognition...');
+      startListening();
+      toast({
+        title: "Recording Started",
+        description: "Speak clearly. I'm listening...",
+      });
     }
   };
 
@@ -652,15 +621,9 @@ const Student = () => {
               </div>
             </div>
 
-            {!mediaRecorderSupported && (
+            {!speechRecognitionSupported && (
               <div className="text-sm text-destructive">
-                Audio recording is not supported in your browser. Please try a modern browser like Chrome, Safari, or Edge.
-              </div>
-            )}
-
-            {mediaRecorderError && (
-              <div className="text-sm text-destructive">
-                Recording error: {mediaRecorderError}
+                Speech recognition is not supported in your browser. Please try Chrome or Edge.
               </div>
             )}
 
@@ -668,26 +631,28 @@ const Student = () => {
               <Button
                 size="lg"
                 onClick={handleRecordToggle}
-                disabled={!mediaRecorderSupported || isProcessing}
+                disabled={!speechRecognitionSupported || isProcessing}
                 className={`flex-1 ${
-                  isMediaRecording
+                  isListening
                     ? "bg-destructive hover:bg-destructive/90"
                     : "bg-primary hover:bg-primary/90"
                 }`}
               >
                 <Mic className="mr-2 h-5 w-5" />
-                {isMediaRecording ? "Stop Recording" : "Start Recording"}
+                {isListening ? "Stop Recording" : "Start Recording"}
               </Button>
             </div>
 
             {/* Live transcript while recording */}
-            {isMediaRecording && liveTranscript && (
+            {isListening && (
               <Card className="p-6 bg-primary/10 border-primary/20 animate-pulse">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-3 h-3 bg-destructive rounded-full animate-pulse"></div>
-                  <p className="text-sm font-semibold text-primary">Recording in Progress</p>
+                  <p className="text-sm font-semibold text-primary">Listening...</p>
                 </div>
-                <p className="text-lg text-foreground font-medium">{liveTranscript}</p>
+                <p className="text-lg text-foreground font-medium">
+                  {transcript || currentText || "Start speaking..."}
+                </p>
               </Card>
             )}
 
